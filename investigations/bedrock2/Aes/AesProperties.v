@@ -567,6 +567,123 @@ Section Proofs.
   Definition ctrl_manual_operation (ctrl : parameters.word) : bool :=
     is_flag_set ctrl AES_CTRL_MANUAL_OPERATION.
 
+  Lemma get_flag_from_status
+    (functions : list (string * (list string * list string * Syntax.cmd)))
+    (H : spec_of_abs_mmio_read32 functions)
+    (tr : trace)
+    (m : mem)
+    (R : mem -> Prop)
+    (s : state)
+    (H0 : R m)
+    (H1 : execution tr s)
+    (i : Z)
+    (Hi : 0 <= i) :
+    call functions AbsMMIO.abs_mmio_read32 tr m [word.of_Z AES_STATUS0]
+      (fun (t : trace) (m0 : mem) (rets : list Semantics.word) =>
+       exists l : locals,
+         map.putmany_of_list_zip ["status"] rets map.empty = Some l /\
+         cmd (call functions)
+           (cmd.set "out"
+              (expr.op bopname.and "status"
+                 (expr.op bopname.slu 1 i))) t m0 l
+           (fun (t0 : trace) (m1 : mem) (l0 : locals) =>
+            list_map (get l0) ["out"]
+              (fun rets0 : list Semantics.word =>
+               exists (status out : Semantics.word) (s' : state),
+                 execution t0 s' /\
+                 read_step s STATUS status s' /\
+                 R m1 /\
+                 rets0 = [out] /\
+                 word.eqb out (word.of_Z 0) =
+                 negb (is_flag_set status i)))).
+  Proof.
+    straightline_call; ssplit.
+    (* specialize abs_mmio to AES STATUS *)
+    { instantiate ( 1 := STATUS ). reflexivity. }
+    { pose proof status_read_always_ok s.
+      cbv [parameters.read_step state_machine_parameters] in *.
+      logical_simplify.
+      do 2 eexists. ssplit; eauto.
+    }
+    { eauto. }
+    { straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+
+      match goal with
+      | |- exists x, ?P /\ ?Q =>
+          let x := fresh x in refine (let x := _ in ex_intro (fun x => P /\ Q) x _);
+          split
+                                      (*
+      | names := _ : string2ident.Context.list
+             |- @WeakestPrecondition.cmd _ _ (cmd.set ?s ?e) _ _ _ ?post =>
+    unfold1_cmd_goal; cbv beta match delta [cmd_body];
+    let names := eval cbv [names] in names in
+    let x := string2ident.lookup s names in
+    string2ident.ensure_free x;
+    (* NOTE: keep this consistent with the [exists _, _ /\ _] case far below *)
+                                         letexists _ as x; split
+                                         *)
+      end.
+      {
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+
+      From coqutil.Tactics Require Import letexists eabstract rdelta.
+
+      match goal with
+      | |- ?x = ?y =>
+          let x := rdelta x in is_evar x; change (x=y); exact eq_refl
+      end.
+      }
+
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+
+      straightline.
+
+      (* keep "execution a x" for later eassumption *)
+      pose proof H4 as HH.
+      simpl in H4.
+      destruct H4. destruct H2.
+      replace s with x1 in *.
+      2:{ eapply execution_unique; eauto. }
+      unfold step in H3. simpl in H3.
+      logical_simplify.
+      infer_reg_using_addr.
+      do 3 eexists; ssplit; eauto.
+      inversion H4. subst.
+      subst_lets. cbv [is_flag_set]. boolsimpl. reflexivity.
+    }
+  Qed.
+
   (***** Proofs for specific functions *****)
 
   Global Instance spec_of_aes_data_ready : spec_of "b2_data_ready" :=
@@ -597,7 +714,13 @@ Section Proofs.
     program_logic_goal_for_function! aes_data_ready.
   Proof.
     repeat straightline.
-    straightline_call; ssplit.
+    subst l. subst args.
+
+    apply get_flag_from_status; eauto.
+  Admitted.
+  (*
+    unfold AES_STATUS_INPUT_READY.
+    unfold consts.
     (* specialize abs_mmio to AES STATUS *)
     { instantiate ( 1 := STATUS ). reflexivity. }
     { pose proof status_read_always_ok s.
@@ -619,8 +742,9 @@ Section Proofs.
       do 3 eexists; ssplit; eauto.
       inversion H4. subst.
       subst_lets. cbv [is_flag_set]. boolsimpl. reflexivity.
+    cbv [AES_STATUS_INPUT_READY].
     }
-  Qed.
+     Qed. *)
 
   Global Instance spec_of_aes_data_valid : spec_of "b2_data_valid" :=
     fun function_env =>
@@ -652,6 +776,7 @@ Section Proofs.
   Proof.
     (* initial processing *)
     repeat straightline.
+    subst l. subst args.
     straightline_call; ssplit.
     (* specialize abs_mmio to AES STATUS *)
     { instantiate ( 1 := STATUS ). reflexivity. }
@@ -661,7 +786,51 @@ Section Proofs.
       do 2 eexists. ssplit; eauto.
     }
     { eauto. }
-    { repeat straightline.
+    { straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      match goal with
+      | names := _ : string2ident.Context.list
+             |- @WeakestPrecondition.cmd _ _ (cmd.set ?s ?e) _ _ _ ?post =>
+    unfold1_cmd_goal; cbv beta match delta [cmd_body];
+    let names := eval cbv [names] in names in
+    let x := string2ident.lookup s names in
+    string2ident.ensure_free x;
+    (* NOTE: keep this consistent with the [exists _, _ /\ _] case far below *)
+    letexists _ as x; split
+      end.
+      {
+        straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
+      straightline.
       (* keep "execution a x" for later eassumption *)
       pose proof H4 as HH.
       simpl in H4.
